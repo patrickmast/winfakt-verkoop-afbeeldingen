@@ -1,0 +1,8 @@
+services:
+  winfakt-verkoop-afbeeldingen:
+    build: .
+    container_name: winfakt-verkoop-afbeeldingen
+    restart: unless-stopped
+    ports:
+      - "5289:80"
+    network_mode: bridge
