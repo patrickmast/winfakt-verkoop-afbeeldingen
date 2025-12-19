@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Download, Image, Loader2, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
+import { Search, Image, Loader2, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import type { WinfaktAppData, SaleRow } from '../types';
 import { getSaleRowsWithImages } from '../services/api.service';
 
@@ -210,15 +210,12 @@ export function SaleRowImagesList({ appData }: Props) {
                       <SortIcon column="size" />
                     </div>
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Download
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {sortedRows.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                       {searchTerm ? 'Geen resultaten gevonden' : 'Geen detailregels met afbeeldingen gevonden'}
                     </td>
                   </tr>
@@ -238,28 +235,29 @@ export function SaleRowImagesList({ appData }: Props) {
                         {row.Description || '-'}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <Image className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                          <span className="text-sm text-gray-700 truncate max-w-xs">
-                            {row.CoverImageOverrideFile?.Name || '-'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 text-right">
-                        {formatFileSize(row.CoverImageOverrideFile?.Size || 0)}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-center">
-                        {row.CoverImageOverrideFile?.Token && (
+                        {row.CoverImageOverrideFile?.Token ? (
                           <a
                             href={`https://winfakt.app/files/${row.CoverImageOverrideFile.Token}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center w-8 h-8 rounded-full hover:bg-blue-50 text-blue-600 transition-colors"
-                            title="Download afbeelding"
+                            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 hover:underline"
                           >
-                            <Download className="w-4 h-4" />
+                            <Image className="w-4 h-4 flex-shrink-0" />
+                            <span className="text-sm truncate max-w-xs">
+                              {row.CoverImageOverrideFile?.Name || '-'}
+                            </span>
                           </a>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Image className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                            <span className="text-sm text-gray-700 truncate max-w-xs">
+                              {row.CoverImageOverrideFile?.Name || '-'}
+                            </span>
+                          </div>
                         )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 text-right">
+                        {formatFileSize(row.CoverImageOverrideFile?.Size || 0)}
                       </td>
                     </tr>
                   ))
@@ -271,7 +269,7 @@ export function SaleRowImagesList({ appData }: Props) {
 
         {/* Version */}
         <div className="fixed bottom-2 right-4 text-xs text-gray-400 font-mono">
-          v2
+          v3
         </div>
       </div>
     </div>
