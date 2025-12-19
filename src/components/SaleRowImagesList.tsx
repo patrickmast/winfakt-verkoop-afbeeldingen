@@ -1,11 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Download, Image, Loader2, AlertCircle } from 'lucide-react';
+import { Search, Download, Image, Loader2, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import type { WinfaktAppData, SaleRow } from '../types';
 import { getSaleRowsWithImages } from '../services/api.service';
 
 interface Props {
   appData: WinfaktAppData;
 }
+
+type SortColumn = 'document' | 'size' | null;
+type SortDirection = 'asc' | 'desc';
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -25,6 +28,8 @@ export function SaleRowImagesList({ appData }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortColumn, setSortColumn] = useState<SortColumn>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   useEffect(() => {
     async function loadSaleRows() {
@@ -64,6 +69,27 @@ export function SaleRowImagesList({ appData }: Props) {
     );
   }, [saleRows, searchTerm]);
 
+  // Sort rows
+  const sortedRows = useMemo(() => {
+    if (!sortColumn) return filteredRows;
+
+    return [...filteredRows].sort((a, b) => {
+      let comparison = 0;
+
+      if (sortColumn === 'document') {
+        const aValue = a.Sale?.ComputedFriendlyID || '';
+        const bValue = b.Sale?.ComputedFriendlyID || '';
+        comparison = aValue.localeCompare(bValue, 'nl', { numeric: true });
+      } else if (sortColumn === 'size') {
+        const aSize = a.CoverImageOverrideFile?.Size || 0;
+        const bSize = b.CoverImageOverrideFile?.Size || 0;
+        comparison = aSize - bSize;
+      }
+
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [filteredRows, sortColumn, sortDirection]);
+
   // Calculate totals
   const totals = useMemo(() => {
     const totalFiles = filteredRows.length;
@@ -74,6 +100,32 @@ export function SaleRowImagesList({ appData }: Props) {
     const uniqueSales = new Set(filteredRows.map((row) => row.SaleID)).size;
     return { totalFiles, totalSize, uniqueSales };
   }, [filteredRows]);
+
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      // Toggle direction or clear sort
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else {
+        setSortColumn(null);
+        setSortDirection('asc');
+      }
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const SortIcon = ({ column }: { column: SortColumn }) => {
+    if (sortColumn !== column) {
+      return <ChevronUp className="w-3 h-3 text-gray-300" />;
+    }
+    return sortDirection === 'asc' ? (
+      <ChevronUp className="w-3 h-3 text-blue-600" />
+    ) : (
+      <ChevronDown className="w-3 h-3 text-blue-600" />
+    );
+  };
 
   if (loading) {
     return (
@@ -128,8 +180,14 @@ export function SaleRowImagesList({ appData }: Props) {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Document
+                  <th
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    onClick={() => handleSort('document')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Document
+                      <SortIcon column="document" />
+                    </div>
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Datum
@@ -143,8 +201,14 @@ export function SaleRowImagesList({ appData }: Props) {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Afbeelding
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Grootte
+                  <th
+                    className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    onClick={() => handleSort('size')}
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      Grootte
+                      <SortIcon column="size" />
+                    </div>
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Download
@@ -152,14 +216,14 @@ export function SaleRowImagesList({ appData }: Props) {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredRows.length === 0 ? (
+                {sortedRows.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                       {searchTerm ? 'Geen resultaten gevonden' : 'Geen detailregels met afbeeldingen gevonden'}
                     </td>
                   </tr>
                 ) : (
-                  filteredRows.map((row) => (
+                  sortedRows.map((row) => (
                     <tr key={`${row.SaleID}-${row.ID}`} className="hover:bg-gray-50">
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                         {row.Sale?.ComputedFriendlyID || row.SaleID}
@@ -207,7 +271,7 @@ export function SaleRowImagesList({ appData }: Props) {
 
         {/* Version */}
         <div className="fixed bottom-2 right-4 text-xs text-gray-400 font-mono">
-          v1
+          v2
         </div>
       </div>
     </div>
